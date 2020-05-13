@@ -1,0 +1,83 @@
+---
+title: 'GEOG673-017 Final Project: Delayed Marine Management'
+author: "Seleni Cruz, PhD Student, University of Delaware"
+date: "3/23/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+```
+
+# Background and disclaimer 
+I am currently working on a project with the goal of evaluating the consequences on delayed marine management. Particularly, in reference to a network of marine reserves that was proposed in 2015 in the Gulf of Califnia in Mexico. Marine reserves, here refers to areas in the ocean completely closed to extractive activity. Marine reserve theory suggests that closing off areas will allow biomass in these closed areas to increase in size, abundance and density. Over time we expect to see the spillover effect, where biomass spills over to areas that are open and can be caught thus providing fisheries benefits. Marine reserves also provide a myriad  of ecosystem benefits that are not considered in this analysis. 
+
+The paper will focus on three metrics:
+1. transition period: this is the period in which implementing a marine reserve nework results in less catch than buisness as usual (ie. a world with no marine reserve). This is a result of closing off areas that were otherwise open to fishing and thus productive. Theory suggest that when spillover occurs we expect that fish catch in the marine reserve scenario will exceed that of business as usual.  
+2. Payoff period: this is the period in which catch lost during the transition period is recovered in the marine reserve scenario, ie. the marine reserve results in net benefits measured in fish catch. 
+3. Biomass in year 50: This refers to biomass after 50 years of reserve implementation and how it compares to business as usual in the same year. 
+
+For this assignment I am focusing on putting together methods and resutls section for a manuscript. This is also my first attempt at putting together a manuscript in RMarkdown (very exciting!). 
+
+1.	Results:
+a.	5% MPA: - aggregate and species: no need for sensitivity- there is enough evidence in literature to suggest that 5% is not enough 
+
+Fishery level Lutjanus and Sqautina do not have a crossing point
+
+```{r}
+BAU <- read.csv(here::here("inputs", "BAU.csv"))%>%
+  filter(Adjusted=="IUU")
+
+scenarios <- read.csv(here::here("inputs", "Scenarios.csv"))%>%
+  filter(Reserve_size==0.05 & Adjusted=="IUU" & Implementation_year==2015)
+
+plot1 <- ggplot(data=BAU, aes(x= Year, y=Catch))+
+  geom_line()+
+  geom_line(data=scenarios, aes(x=Year, y=Catch, color=Name, group=Implementation_year))+
+  facet_wrap(~Name, scales="free")+
+  theme_classic()
+
+#ggplotly(plot1)
+
+payoff_analysis <- read.csv(here::here("inputs", "payoff_all.csv"))%>%
+  filter(Reserve_size==0.05 & Adjusted=="IUU")
+payoff_analysis$Implementation_year <- as.factor(payoff_analysis$Implementation_year)
+
+ggplot(payoff_analysis, aes(x=Reserve_size, y=Payoff_period, group=Implementation_year, color=Implementation_year))+
+  geom_point(size=2)+
+  facet_wrap(~Adjusted)+
+  theme_classic()
+
+payoff_fishery<- read.csv (here::here("inputs", "payoff_fishery.csv"))%>%
+  filter(Reserve_size==0.05 & Adjusted=="IUU", Implementation_year==2015)
+
+```
+
+
+
+b.	Payoff and reserve size – graph payoff and reserve size – analysis up to 100 years: aggregate: choose size that minimizes payoff period (from 5 -100% closure not just 50%
+Clump all the MPA into one giant reserve- to not have to run sensitivity on this and it will help with the movement issue 
+
+c.	Select optimal scenario and run sensitivity analysis 
+i.	Number of runs where biomass was above carrying capacity – ie recovered 
+ii.	Number of runs where transition period was between a number of years 
+iii.	Number of run where fishery was profitable in scenario relative to BAU
+
+d.	In optimal scenario: what if we assume 40% IUU and implement MPA – with sensitivity 
+e.	In optimal scenario: what if we assume 40% IUU and DO NOT implement MPA -with sensitivity
+
+Metrics:
+i.	Transition 
+ii.	Payoff period
+iii.	Biomass in year 50
+
+

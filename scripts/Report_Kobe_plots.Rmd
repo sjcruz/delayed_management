@@ -1,0 +1,163 @@
+---
+title: "Report Kobe Plots"
+author: "Seleni Cruz"
+date: "6/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(jcolors)
+```
+
+Fishery Status in 2015
+
+```{r echo=FALSE}
+status <- read.csv(here::here("inputs", "ref_pts.csv"))%>%
+  filter(Adjusted=="IUU")%>% select (Name, Adjusted, bbmsy, ffmsy, catch)%>%
+  mutate(Implementation_year="Initial", Reserve_size ="BAU", lab= c("At", "Ca", "Ce", "Da", "Ep", "Lu", "Mi", "Mu", "Oc", "Pa", "Sc", "Sq"))
+
+bmsy<- expression(paste(B/B[MSY]))
+fmsy <- expression(paste(F/F[MSY]))
+
+ggplot(status, aes(x= bbmsy, y=ffmsy))+
+  #geom_rect(xmin = 0.0, xmax = 1.0, ymin = 0.0, ymax = 1, fill = 'yellow', alpha = 0.1) +
+  #geom_rect(xmin = 0, xmax = 1, ymin = 1.0, ymax = 7.1, fill = 'red', alpha = 0.1) +
+  #geom_rect(xmin = 1, xmax = 1.5, ymin = 0, ymax = 1, fill = 'green', alpha = 0.1) +
+  #geom_rect(xmin = 1, xmax = 2.1, ymin = 1, ymax = 7.1, fill = 'orange', alpha = 0.1)+
+  geom_point(aes(size=catch), show.legend = FALSE)+
+  #annotate("point", x = 0.3, y = 1.7, colour = "blue", size=3)+
+  scale_size(range = c(2, 8))+
+  labs(x=bmsy, y=fmsy)+
+  geom_vline(xintercept = 1, linetype="dotted", color="black") +
+  geom_hline(yintercept = 1, linetype="dotted", color="black") +
+  scale_x_continuous(limits=c(0, 1),expand=c(0,0))+
+  scale_y_continuous(limits=c(0, 7.1),expand=c(0,0), breaks = c(0, 1, 2, 4, 6), labels= c(0, 1, 2, 4, 6))+
+  theme_classic(base_size = 10)+
+  geom_text_repel(aes(label = lab, size=4),show.legend=FALSE)
+
+#ggsave(here::here("images", "status_2015.jpg"),  width=4, height=2, dpi=400)
+
+```
+
+
+```{r}
+BAU <- read.csv(here::here("inputs", "BAU.csv"))%>%mutate(Implementation_year="BAU")
+
+all_scen <- read.csv(here::here("inputs", "Scenarios.csv"))%>% filter(!(Implementation_year==2025))%>%rbind(BAU)
+
+five_status <- all_scen%>%filter((Reserve_size==0.05 | Reserve_size ==0) & Adjusted=="IUU" & Year==2065)%>%
+  select(Name, Adjusted, bbmsy, ffmsy, Implementation_year)%>%rbind(status)
+
+unique(five_status$Implementation_year)
+five_status$Implementation_year <- factor(five_status$Implementation_year, levels = c("Initial", "BAU", "2015", "2020", "2030"))
+
+ggplot(five_status, aes(x= bbmsy, y=ffmsy, group=Name))+
+  geom_point(size=4, aes(color= Implementation_year, shape=Implementation_year))+
+  scale_shape_manual("",values=c(16, 17, 15, 18, 20))+
+  scale_colour_jcolors("",palette = "pal8")+
+  labs(x=bmsy, y=fmsy)+
+  geom_vline(xintercept = 1, linetype="dotted", color="black") +
+  geom_hline(yintercept = 1, linetype="dotted", color="black") +
+  scale_y_continuous(limits=c(0.5, 7.1),expand=c(0,0), breaks = c(0.5, 1, 2, 4, 6, 7), labels= c(0.5, 1, 2, 4, 6,7))+
+  #scale_x_continuous(expand=c(0,0))+
+  theme_classic(base_size = 9)+
+  theme_classic(base_size = 9)
+
+#ggsave(here::here("images", "Figure2.jpg"),  width=4, height=3, dpi=400)
+```
+
+
+```{r}
+BAU <- read.csv(here::here("inputs", "BAU.csv"))%>%mutate(Implementation_year="BAU", Reserve_size="BAU")
+
+all_scen <- read.csv(here::here("inputs", "Scenarios.csv"))%>% filter(!(Implementation_year==2025))%>%rbind(BAU)
+
+SI_fig3 <- all_scen%>%filter(Adjusted=="IUU" & Year==2065)%>%
+  select(Name, Adjusted, bbmsy, ffmsy, Implementation_year, Reserve_size)%>%rbind(status)%>%
+  filter(Reserve_size=="BAU"| Reserve_size==0.05| Reserve_size==0.3| Reserve_size==0.5)
+
+unique(SI_fig3$Implementation_year)
+SI_fig3$Implementation_year <- factor(SI_fig3$Implementation_year, levels = c("Initial", "BAU", "2015", "2020", "2030"))
+
+ggplot(SI_fig3, aes(x= bbmsy, y=ffmsy, group=Name))+
+  geom_point(size=4, aes(color= Implementation_year, shape=Implementation_year))+
+  scale_shape_manual("",values=c(16, 17, 15, 18, 20))+
+  scale_colour_jcolors("",palette = "pal8")+
+  labs(x=bmsy, y=fmsy)+
+  geom_vline(xintercept = 1, linetype="dotted", color="black") +
+  geom_hline(yintercept = 1, linetype="dotted", color="black") +
+  scale_y_continuous(limits=c(0.5, 7.1),expand=c(0,0), breaks = c(0.5, 1, 2, 4, 6, 7), labels= c(0.5, 1, 2, 4, 6,7))+
+  #scale_x_continuous(expand=c(0,0))+
+  theme_classic(base_size = 9)+
+  theme_classic(base_size = 9)+
+  facet_wrap(~Reserve_size)
+
+#ggsave(here::here("images", "SI_fig3.jpg"),  width=4, height=3, dpi=400)
+```
+
+```{r}
+BAU <- read.csv(here::here("inputs", "BAU.csv"))%>%mutate(Implementation_year="BAU", Reserve_size="BAU")
+
+all_scen <- read.csv(here::here("inputs", "Scenarios.csv"))%>% filter(!(Implementation_year==2025))%>%rbind(BAU)
+
+SI_fig4 <- all_scen%>%filter(Adjusted=="IUU"| Adjusted=="IUU_40"|Adjusted=="IUU_60",Year==2065)%>%
+  select(Name, Adjusted, bbmsy, ffmsy, Implementation_year, Reserve_size)%>%
+  filter(Reserve_size=="BAU"| Reserve_size==0.05)
+
+unique(SI_fig4$Implementation_year)
+SI_fig4$Implementation_year <- factor(SI_fig4$Implementation_year, levels = c("Initial", "BAU", "2015", "2020", "2030"))
+
+ggplot(SI_fig4, aes(x= bbmsy, y=ffmsy, group=Name))+
+  geom_point(size=4, aes(color= Implementation_year, shape=Implementation_year))+
+  scale_shape_manual("",values=c(16, 17, 15, 18, 20))+
+  scale_colour_jcolors("",palette = "pal8")+
+  labs(x=bmsy, y=fmsy)+
+  geom_vline(xintercept = 1, linetype="dotted", color="black") +
+  geom_hline(yintercept = 1, linetype="dotted", color="black") +
+  scale_y_continuous(limits=c(0.5, 3),expand=c(0,0), breaks = c(0.5, 1, 2, 3), labels= c(0.5, 1, 2, 3))+
+  scale_x_continuous(expand=c(0,0), limits=c(0, 1),breaks = c(0, 0.5, 1), labels= c(0, 0.5, 1))+
+  theme_classic(base_size = 9)+
+  theme_classic(base_size = 9)+
+  facet_grid(~Adjusted)
+
+ggsave(here::here("images", "SI_fig4.jpg"),  width=4, height=2, dpi=400)
+```
+
+
+```{r}
+BAU <- read.csv(here::here("inputs", "BAU.csv"))%>%mutate(Implementation_year="BAU", Reserve_size="BAU")
+
+all_scen <- read.csv(here::here("inputs", "Scenarios.csv"))%>% filter(!(Implementation_year==2025))%>%rbind(BAU)
+
+SI_fig4 <- all_scen%>%filter(Adjusted=="IUU_40_legal"| Adjusted=="IUU_40"|Adjusted=="IUU_60"|Adjusted=="IUU_60_legal",Year==2065)%>%
+  select(Name, Adjusted, bbmsy, ffmsy, Implementation_year, Reserve_size)%>%
+  filter(Reserve_size=="BAU"| Reserve_size==0.05)
+
+unique(SI_fig4$Implementation_year)
+SI_fig4$Implementation_year <- factor(SI_fig4$Implementation_year, levels = c("Initial", "BAU", "2015", "2020", "2030"))
+
+ggplot(SI_fig4, aes(x= bbmsy, y=ffmsy, group=Name))+
+  geom_point(size=4, aes(color= Implementation_year, shape=Implementation_year))+
+  scale_shape_manual("",values=c(16, 17, 15, 18, 20))+
+  scale_colour_jcolors("",palette = "pal8")+
+  labs(x=bmsy, y=fmsy)+
+  geom_vline(xintercept = 1, linetype="dotted", color="black") +
+  geom_hline(yintercept = 1, linetype="dotted", color="black") +
+   scale_y_continuous(limits=c(0.5, 7.1),expand=c(0,0), 
+                      breaks = c(0.5, 1, 2, 4, 6, 7), labels= c(0.5, 1, 2, 4, 6,7))+
+  #scale_x_continuous(expand=c(0,0), limits=c(0, 1),breaks = c(0, 0.5, 1), labels= c(0, 0.5, 1))+
+  theme_classic(base_size = 9)+
+  theme_classic(base_size = 9)+
+  facet_wrap(~Adjusted)
+
+ggsave(here::here("images", "SI_fig5.jpg"),  width=4, height=3, dpi=400)
+```
+
+
+
+
+
+
+
+
